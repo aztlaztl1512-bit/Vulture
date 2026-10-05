@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم فولتشر الشاملة 🦅</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --p: #1a202c; --s: #28a745; --d: #dc3545; --bg: #f7fafc; --link: #4a4ae2; --view: #4a5568; --soft-red: #f87171; --wa: #25D366; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--link); display: flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; color: white; }
+        #loginOverlay input { padding: 15px; border-radius: 12px; border: none; width: 250px; text-align: center; font-size: 1.1rem; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        #loginOverlay button { padding: 12px 40px; border-radius: 12px; border: 2px solid white; background: transparent; color: white; font-weight: bold; cursor: pointer; }
+
+        .header { background: white; padding: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; text-align: center; }
+        .nav-tabs { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .tab-btn { padding: 10px 18px; border-radius: 12px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: bold; font-size: 0.85rem; color: #555; }
+        .tab-btn.active { background: var(--link); color: white; border-color: var(--link); }
+
+        .container { padding: 20px; max-width: 1200px; margin: auto; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        @keyframes dayGlow { 0%, 100% { transform: scale(1); text-shadow: 0 0 2px var(--d); } 50% { transform: scale(1.15); text-shadow: 0 0 10px var(--d); opacity: 0.9; } }
+        .days-highlight { color: var(--d); font-weight: 900; display: inline-block; animation: dayGlow 1.2s infinite ease-in-out; }
+
+        .prog-mini { height: 12px; background: var(--s); border-radius: 10px; overflow: hidden; margin: 12px 0; border: 1px solid #eee; }
+        .fill-red { height: 100%; background: var(--d); float: right; transition: 0.5s linear; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee; position: relative; }
+
+        .modal { background: #fff; border-radius: 25px; padding: 25px; margin-bottom: 30px; border: 2px dashed #cbd5e0; }
+        input, textarea { width: 100%; padding: 14px; margin: 6px 0; border: 1px solid #ddd; border-radius: 12px; box-sizing: border-box; }
+        input:disabled { background: #f1f5f9; color: #888; cursor: not-allowed; }
+
+        .btn { padding: 10px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; color: white; font-size: 0.8rem; transition: 0.3s; }
+        .btn-view { background: var(--view); } .btn-edit { background: var(--s); } .btn-link { background: var(--link); } .btn-del { background: var(--d); } .btn-wa { background: var(--wa); }
+        .btn-main { background: var(--link); width: 100%; padding: 14px; font-size: 1rem; margin-top: 10px; display: block; color: white; border: none; }
+
+        #viewModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .view-card-container { background: white; width: 95%; max-width: 400px; border-radius: 25px; overflow: hidden; position: relative; }
+        .view-header { background: var(--link); color: white; padding: 20px; text-align: center; }
+        .view-body { padding: 15px 20px; background: white; }
+        
+        .view-row { border-bottom: 1px solid #f0f0f0; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .v-label { font-size: 0.8rem; color: var(--soft-red); font-weight: bold; white-space: nowrap; }
+        .v-text { font-size: 0.9rem; color: #333; font-weight: bold; text-align: left; word-break: break-all; }
+
+        .app-card { background: white; border-radius: 22px; padding: 15px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 10px; position: relative; text-align: center; }
+        .app-card img { width: 65px; height: 65px; border-radius: 18px; object-fit: cover; align-self: center; }
+        .drag-handle { position: absolute; top: 12px; left: 12px; cursor: grab; color: #cbd5e0; }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay">
+    <i class="fas fa-user-shield" style="font-size: 4rem; margin-bottom: 20px;"></i>
+    <h2>إدارة فولتشر 🦅</h2>
+    <input type="password" id="passInput" placeholder="كلمة المرور">
+    <button onclick="checkPass()">دخول</button>
+</div>
+
+<div id="viewModal">
+    <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+        <div style="width: 95%; max-width: 400px; margin-bottom: 10px; display: flex; gap: 10px;">
+            <button class="btn btn-main" style="background:var(--d); margin:0;" onclick="closeView()">إغلاق</button>
+            <button class="btn-main" style="background:#f59e0b; margin:0; border:none; border-radius:12px; cursor:pointer;" onclick="saveCardAsImage()">حفظ للأستوديو 📸</button>
+        </div>
+        <div class="view-card-container" id="captureTarget">
+            <div class="view-header"><h3 id="v_title" style="margin:0;">بيانات فولتشر</h3><small>🦅 Vulture System</small></div>
+            <div class="view-body" id="v_content"></div>
+        </div>
+    </div>
+</div>
+
+<div id="adminApp" style="display:none;">
+    <div class="header">
+        <b>لوحة تحكم فولتشر 🦅</b>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('clients', this)">المشتركين</button>
+            <button class="tab-btn" onclick="switchTab('store', this)">المتجر</button>
+            <button class="tab-btn" onclick="switchTab('settings', this)">الإعدادات</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="clients" class="section active">
+            <div class="modal">
+                <h3 id="clientTitle">إضافة مشترك جديد</h3>
+                <input type="hidden" id="editClientIndex">
+                <input type="text" id="cn" placeholder="اسم العميل (الرابط يعتمد عليه)">
+                <input type="text" id="cp" placeholder="رقم الجوال">
+                <input type="text" id="cu" placeholder="اسم المستخدم">
+                <input type="text" id="ck" placeholder="الرقم السري">
+                <div style="display:flex; gap:8px;"><input type="date" id="cs"><input type="date" id="ce"></div>
+                <button class="btn btn-main" id="saveClientBtn" onclick="saveClient()">حفظ في السحابة ☁️</button>
+                <button id="cancelBtn" class="btn btn-main" style="background:#edf2f7; color:#4a5568; display:none;" onclick="clearClientForm()">إلغاء التعديل</button>
+            </div>
+            <div class="grid" id="clientGrid"></div>
+        </div>
+
+        <div id="store" class="section">
+            <div class="modal">
+                <h3 id="appTitle">+ إضافة تطبيق للمتجر</h3>
+                <input type="hidden" id="editAppIndex">
+                <input type="file" id="appIcon" accept="image/*">
+                <input type="text" id="an" placeholder="اسم التطبيق">
+                <input type="text" id="ad" placeholder="كود دونلودر">
+                <input type="text" id="al" placeholder="رابط التحميل المباشر">
+                <textarea id="at" placeholder="وصف التطبيق"></textarea>
+                <button class="btn btn-main" id="saveAppBtn" style="background:var(--s)" onclick="saveApp()">حفظ في المتجر ✨</button>
+                <button id="cancelAppBtn" class="btn btn-main" style="background:#edf2f7; color:#4a5568; display:none; margin-top:5px;" onclick="clearAppForm()">إلغاء التعديل</button>
+            </div>
+            <button class="btn btn-main" style="background:#5e4cc1; margin-bottom:20px;" onclick="saveOrder()"><i class="fas fa-save"></i> حفظ الترتيب الحالي</button>
+            <div class="grid" id="appList"></div>
+        </div>
+
+        <div id="settings" class="section">
+            <div class="modal" style="text-align:center;">
+                <h3>الإعدادات العامة ⚙️</h3>
+                <div style="text-align:right; margin-bottom:15px;">
+                    <label><b>الرابط الموحد للمشتركين:</b></label>
+                    <input type="text" id="globalLink" placeholder="أدخل الرابط الذي سيظهر لجميع المشتركين">
+                </div>
+                <hr>
+                <h3>تنسيق شعار فولتشر 🦅</h3>
+                <input type="file" id="logoFile" accept="image/*" onchange="previewNewLogo(this)">
+                <div style="margin:20px 0;"><label>الحجم: <b id="sizeVal">70</b>px</label><input type="range" id="logoSize" min="50" max="250" value="70" oninput="updateLogoPreview(this.value)"></div>
+                <div style="border:1px dashed #ddd; padding:10px; display:inline-block; border-radius:15px;"><img id="currentLogoPreview" src="" style="width:70px; object-fit: contain;"></div>
+                <button class="btn btn-main" onclick="saveSettings()">حفظ الإعدادات 🚀</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DB = "https://aziztest-a0f6c-default-rtdb.firebaseio.com/.json";
+    const MASTER_PASS = "Aztlg1512";
+    // إضافة خاصية globalLink للبيانات السحابية
+    let cloudData = { clients: [], apps: [], logo: "", logoSize: "70", globalLink: "" };
+
+    async function checkPass() {
+        if(document.getElementById('passInput').value === MASTER_PASS) {
+            document.getElementById('loginOverlay').style.display = "none";
+            document.getElementById('adminApp').style.display = "block";
+            await load();
+        } else { alert("كلمة المرور غير صحيحة!"); }
+    }
+
+    async function load() {
+        const r = await fetch(DB);
+        const d = await r.json();
+        if (d) {
+            cloudData = d;
+            if(!cloudData.clients) cloudData.clients = [];
+            if(!cloudData.apps) cloudData.apps = [];
+            if(!cloudData.globalLink) cloudData.globalLink = "";
+            
+            if(cloudData.logo) document.getElementById('currentLogoPreview').src = cloudData.logo;
+            document.getElementById('globalLink').value = cloudData.globalLink;
+            document.getElementById('logoSize').value = cloudData.logoSize || 70;
+            updateLogoPreview(cloudData.logoSize || 70);
+            
+            renderClients(); renderApps();
+        }
+    }
+
+    function renderClients() {
+        const grid = document.getElementById('clientGrid');
+        grid.innerHTML = (cloudData.clients || []).map((c, i) => {
+            const days = Math.max(0, Math.ceil((new Date(c.ce) - new Date()) / 86400000));
+            const showWA = (days <= 5 && days > 0);
+            return `<div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;"><b>${c.name}</b> <span class="days-highlight">${days} يوم</span></div>
+                <div class="prog-mini"><div class="fill-red" style="width:${Math.max(0, 100-(days/3.65))}%"></div></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;">
+                    <button class="btn btn-edit" onclick="editClient(${i})">تعديل</button>
+                    <button class="btn btn-link" onclick="copyL('${c.name}')">الرابط</button>
+                    <button class="btn btn-view" onclick="openView(${i}, 'client')">بيانات</button>
+                    <button class="btn btn-del" onclick="delClient(${i})">حذف</button>
+                    ${showWA ? `<button class="btn btn-wa" onclick="sendReminder('${c.name}', '${c.cp}', ${days})" style="grid-column: span 2; margin-top:5px;"><i class="fab fa-whatsapp"></i> تنبيه واتساب</button>` : ''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function renderApps() {
+        const list = document.getElementById('appList');
+        list.innerHTML = (cloudData.apps || []).map((a, i) => `
+            <div class="app-card" data-id="${i}">
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <img src="${a.img || ''}">
+                <b>${a.name}</b>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:5px;">
+                    <button class="btn btn-edit" onclick="editApp(${i})">تعديل</button>
+                    <button class="btn btn-view" onclick="openView(${i}, 'app')">معاينة</button>
+                    <button class="btn btn-del" onclick="delApp(${i})">حذف</button>
+                </div>
+            </div>`).join('');
+        new Sortable(list, { animation: 150, handle: '.drag-handle' });
+    }
+
+    function openView(i, type) {
+        const vContent = document.getElementById('v_content');
+        if(type === 'client') {
+            const c = cloudData.clients[i];
+            document.getElementById('v_title').innerText = "بيانات المشترك";
+            // هنا نستخدم cloudData.globalLink بدلاً من الرابط الفردي
+            const fields = [
+                ['اسم المشترك', c.name],
+                ['رقم الجوال', c.cp],
+                ['اسم المستخدم', c.cu],
+                ['كلمة السر', c.ck],
+                ['الرابط', cloudData.globalLink || '---'], 
+                ['بداية الاشتراك', c.cs],
+                ['نهاية الاشتراك', c.ce]
+            ];
+            vContent.innerHTML = fields.map(f => `<div class="view-row"><span class="v-label">${f[0]}</span><span class="v-text">${f[1] || '---'}</span></div>`).join('');
+        } else {
+            const a = cloudData.apps[i];
+            document.getElementById('v_title').innerText = "معاينة التطبيق";
+            const fields = [['اسم التطبيق', a.name],['كود دونلودر', a.ad],['رابط التحميل', a.al],['الوصف', a.at]];
+            vContent.innerHTML = `<div style="text-align:center; margin-bottom:15px;"><img src="${a.img}" style="width:80px; height:80px; border-radius:15px; object-fit:cover; border:1px solid #eee;"></div>` + 
+                               fields.map(f => `<div class="view-row"><span class="v-label">${f[0]}</span><span class="v-text">${f[1] || '---'}</span></div>`).join('');
+        }
+        document.getElementById('viewModal').style.display = 'flex';
+    }
+
+    function editClient(i) {
+        const c = cloudData.clients[i];
+        document.getElementById('editClientIndex').value = i;
+        document.getElementById('cn').value = c.name;
+        document.getElementById('cn').disabled = true; 
+        ['cp','cu','ck','cs','ce'].forEach(id => document.getElementById(id).value = c[id] || "");
+        document.getElementById('clientTitle').innerText = "تعديل: " + c.name;
+        document.getElementById('cancelBtn').style.display = "block";
+        window.scrollTo(0,0);
+    }
+
+    function clearClientForm() {
+        ['cn','cp','cu','ck','cs','ce','editClientIndex'].forEach(id=>document.getElementById(id).value="");
+        document.getElementById('cn').disabled = false;
+        document.getElementById('clientTitle').innerText = "إضافة مشترك جديد";
+        document.getElementById('cancelBtn').style.display = "none";
+    }
+
+    async function saveClient() {
+        const idx = document.getElementById('editClientIndex').value;
+        const c = { name: v('cn'), cp: v('cp'), cu: v('cu'), ck: v('ck'), cs: v('cs'), ce: v('ce') };
+        if(idx === "") cloudData.clients.push(c); else cloudData.clients[idx] = c;
+        await sync(); clearClientForm(); load();
+    }
+
+    // بقية الدوال البرمجية (حفظ التطبيق، الترتيب، إلخ) تبقى كما هي
+    async function saveApp() {
+        const idx = document.getElementById('editAppIndex').value;
+        const iconFile = document.getElementById('appIcon').files[0];
+        let imgBase64 = "";
+        if (iconFile) {
+            const reader = new FileReader();
+            imgBase64 = await new Promise(r => { reader.onload=()=>r(reader.result); reader.readAsDataURL(iconFile); });
+        } else if (idx !== "") { imgBase64 = cloudData.apps[idx].img; }
+        const appData = { name: v('an'), ad: v('ad'), al: v('al'), at: v('at'), img: imgBase64 };
+        if (idx === "") cloudData.apps.push(appData); else cloudData.apps[idx] = appData;
+        await sync(); clearAppForm(); load(); alert("تم الحفظ بنجاح ✨");
+    }
+
+    async function saveSettings() {
+        cloudData.logo = document.getElementById('currentLogoPreview').src;
+        cloudData.logoSize = document.getElementById('logoSize').value;
+        cloudData.globalLink = document.getElementById('globalLink').value; // حفظ الرابط الموحد
+        await sync();
+        alert("تم حفظ الإعدادات بنجاح! 🚀");
+    }
+
+    function editApp(i) {
+        const a = cloudData.apps[i];
+        document.getElementById('editAppIndex').value = i;
+        document.getElementById('an').value = a.name;
+        document.getElementById('ad').value = a.ad || "";
+        document.getElementById('al').value = a.al || "";
+        document.getElementById('at').value = a.at || "";
+        document.getElementById('appTitle').innerText = "تعديل تطبيق: " + a.name;
+        document.getElementById('saveAppBtn').innerText = "تحديث في المتجر ✨";
+        document.getElementById('cancelAppBtn').style.display = "block";
+        window.scrollTo(0,0);
+    }
+
+    function clearAppForm() {
+        ['an','ad','al','at','editAppIndex','appIcon'].forEach(id => document.getElementById(id).value = "");
+        document.getElementById('appTitle').innerText = "+ إضافة تطبيق للمتجر";
+        document.getElementById('saveAppBtn').innerText = "حفظ في المتجر ✨";
+        document.getElementById('cancelAppBtn').style.display = "none";
+    }
+
+    function copyL(name) {
+        const clientUrl = "https://abonaoaf.github.io/An/user.html?name=" + encodeURIComponent(name);
+        navigator.clipboard.writeText(clientUrl);
+        alert("تم نسخ رابط المشترك الثابت ✅");
+    }
+
+    async function saveOrder() {
+        const items = document.querySelectorAll('#appList .app-card');
+        let newArr = []; items.forEach(item => newArr.push(cloudData.apps[item.getAttribute('data-id')]));
+        cloudData.apps = newArr; await sync(); alert("تم حفظ الترتيب!"); load();
+    }
+
+    function sendReminder(name, phone, days) {
+        let cleanPhone = phone.replace(/\D/g, '');
+        if(!cleanPhone.startsWith('966')) cleanPhone = '966' + cleanPhone;
+        const msg = `مرحباً ${name}، اشتراكك في فولتشر ينتهي خلال ${days} أيام.`;
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    function closeView() { document.getElementById('viewModal').style.display = 'none'; }
+    function saveCardAsImage() { html2canvas(document.getElementById('captureTarget'), {scale: 3}).then(canvas => { const link = document.createElement('a'); link.href = canvas.toDataURL(); link.download = `Vulture_Card.png`; link.click(); }); }
+    async function sync() { await fetch(DB, { method: 'PUT', body: JSON.stringify(cloudData) }); }
+    function v(id) { return document.getElementById(id).value; }
+    function switchTab(id, btn) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active'); btn.classList.add('active');
+    }
+    async function delClient(i) { if(confirm("حذف؟")) { cloudData.clients.splice(i,1); await sync(); load(); } }
+    async function delApp(i) { if(confirm("حذف؟")) { cloudData.apps.splice(i,1); await sync(); load(); } }
+    function updateLogoPreview(val) { document.getElementById('sizeVal').innerText = val; document.getElementById('currentLogoPreview').style.width = val + "px"; }
+    function previewNewLogo(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = (e) => document.getElementById('currentLogoPreview').src = e.target.result; reader.readAsDataURL(input.files[0]); } }
+</script>
+</body>
+</html>
